@@ -1,7 +1,11 @@
 import asyncio
 import logging
 
+from bot.Handlers.registration_handle import reg_router
 from bot.Handlers.Posts_handlers import Post_router
+from bot.Handlers.Login_handle import Login_router
+from bot.Handlers.admin_handles import admin_router
+
 
 from aiogram import Bot, Dispatcher
 import os
@@ -20,7 +24,7 @@ dp = Dispatcher()
 
 async def main():
     try:
-        dp.include_router(Post_router)
+        dp.include_routers(Post_router,reg_router,Login_router,admin_router)
         await dp.start_polling(bot)
     finally:
         await bot.session.close()
