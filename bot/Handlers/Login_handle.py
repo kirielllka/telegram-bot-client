@@ -16,8 +16,15 @@ Login_router = Router()
 
 @Login_router.message(Command('login'))
 async def login_start(message:Message, state:FSMContext):
-    await state.set_state(Login_state.username)
-    await message.answer(text='Введите имя пользователя чтобы я понял кто вы')
+    try:
+        token = tokens[message.chat.id]
+    except:
+        token = None
+    if token:
+        await message.answer('Вы уже авторизованы')
+    else:
+        await state.set_state(Login_state.username)
+        await message.answer(text='Введите имя пользователя чтобы я понял кто вы')
 
 @Login_router.message(Login_state.username)
 async def login_name(message:Message, state:FSMContext):

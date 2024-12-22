@@ -1,3 +1,5 @@
+import logging
+from pyexpat.errors import messages
 
 from aiogram import  types
 from aiogram.filters.command import Command
@@ -20,7 +22,6 @@ from ..States.StatesModel import Post_state,Comment_state
 from ..login_dicts import tokens
 
 Post_router = Router()
-
 
 
 @Post_router.message(Command('start'))
@@ -80,6 +81,7 @@ async def profile_author(query: CallbackQuery, callback_data:PostCallBack):
     except:
         token = None
     if not token:
+        await query.answer(query.message.chat.id)
         await query.answer('Сначала авторизуйтесь')
     else:
         data = await BaseResponces.get_profile(author_id,token)
@@ -98,10 +100,11 @@ async def profile_author(query: CallbackQuery, callback_data:PostCallBack):
 async def comments(query: CallbackQuery, callback_data:PostCallBack):
     post_id = callback_data.post_id
     try:
-        token = tokens[query.chat.id]
-    except:
+        token = tokens[query.message.chat.id]
+    except KeyError:
         token = None
     if not token:
+
         await query.answer('Сначала авторизуйтесь')
     else:
         data = await BaseResponces.comments_on_post(post_id, token)
@@ -124,7 +127,7 @@ async def comments(query: CallbackQuery, callback_data:PostCallBack):
 @Post_router.callback_query(PostCallBack.filter(F.foo == 'for_comment'))
 async def comment_create(query: CallbackQuery, callback_data:PostCallBack, state:FSMContext):
     try:
-        token = tokens[query.chat.id]
+        token = tokens[query.message.chat.id]
     except:
         token = None
     if not token:
@@ -140,7 +143,7 @@ async def comment_content(message:types.Message, state:FSMContext):
     await state.update_data(content = message.text)
     data = await state.get_data()
     token = tokens[message.chat.id]
-    req = await BaseResponces.create_comment(data=data, token=token)
+    req = await BaseResponces.create_comment(data=data, token=token, post_id=data['post'])
     print(req)
     await message.answer('Ваш комментарий опубликован')
     await state.clear()
