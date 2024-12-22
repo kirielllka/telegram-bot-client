@@ -9,3 +9,11 @@ class Reg_state(StatesGroup):
 class Login_state(StatesGroup):
     username = State()
     password = State()
+
+class Post_state(StatesGroup):
+    title = State()
+    content = State()
+
+class Comment_state(StatesGroup):
+    post = State()
+    content = State()
