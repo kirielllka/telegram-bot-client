@@ -1,4 +1,4 @@
-
+from ..OtherCode import Token_add
 from aiogram.filters.command import Command
 
 from aiogram.fsm.context import FSMContext
@@ -42,6 +42,6 @@ async def login_password(message:Message, state:FSMContext):
         await message.answer(text='Что-то пошло не так, проверьте корректность данных и начните авторизацию заново')
         await state.clear()
     else:
-        tokens[message.chat.id] = token
+        Token_add(token=token,user_id=message.chat.id)
         await message.answer(f'Как я мог тебя не узнать! Авторизация прошла успешно')
         await state.clear()

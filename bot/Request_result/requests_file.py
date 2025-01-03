@@ -2,7 +2,6 @@ import asyncio
 from wsgiref.util import application_uri
 
 import requests
-from urllib3 import request
 
 start_url = 'http://127.0.0.1:8000/api/'
 # token = 'd49d43a85d531bca57c2830bbfde826eebaf0d6e'
@@ -13,7 +12,7 @@ class BaseResponces:
     async def get_all_posts(token):
         try:
             headers = {'Content-type': 'application/json', 'Authorization': f'Token {token}'}
-            return requests.get(f'{start_url}v1/posts', headers=headers).json()
+            return requests.get(f'{start_url}v1/posts/', headers=headers).json()
         except Exception:
             return {'Responce':'error'}
 
@@ -75,11 +74,18 @@ class BaseResponces:
     @staticmethod
     async def create_post(data, token):
         try:
-            request = requests.post(f'{start_url}v1/posts/', data=data,
-                                    headers={'Content-type': 'application/json', 'Authorization': f'Token {token}'}).json()
-            return request
-        except Exception:
-            return 'Error'
+            request = requests.post(
+                f'{start_url}v1/posts/',
+                json=dict(data),  # Сериализуем как JSON
+                headers={
+                    'Content-type': 'application/json',
+                    'Authorization': f'Token {token}'
+                }
+            )
+            request.raise_for_status()  # Raises an exception for bad status codes (4xx or 5xx)
+            return request.json()
+        except requests.exceptions.RequestException as e:
+            return f'Error: {e}'
 
     @staticmethod
     async  def create_comment(data,post_id,token):
@@ -90,7 +96,20 @@ class BaseResponces:
         except Exception:
             return 'Error'
 
+    @staticmethod
+    async def delete_post(post_id,token):
+            try:
+                request = requests.delete(f'http://127.0.0.1:8000/api/v1/posts/{post_id}/',
+                                          headers={'Content-type': 'application/json', 'Authorization': f'Token {token}'}).json()
+
+                return 'Error'
+            except Exception:
+                return request
 
 
 
 
+
+
+
+    

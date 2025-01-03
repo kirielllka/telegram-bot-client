@@ -43,7 +43,7 @@ async def registr_email(message:Message, state:FSMContext):
              await message.answer(
                  text='Почта введена некорректно'
              )
-             state.clear()
+             await state.clear()
     except Exception:
        await message.answer('Ошибка в формате')
 

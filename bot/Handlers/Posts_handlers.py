@@ -60,11 +60,12 @@ async def al_posts_tg(message:types.Message):
                                                         author_id=post['autor_info']['id'],post_id=post['id']).pack()),
 
                 types.InlineKeyboardButton(text='Комментарии', callback_data=PostCallBack(foo='all_comment',
-                                                        author_id=post['autor_info']['id'],post_id=post['id']).pack()),
-
+                                                        author_id=post['autor_info']['id'],post_id=post['id']).pack()),)
+            builder.row(
                 types.InlineKeyboardButton(text='Написать комментарий', callback_data=PostCallBack(foo='for_comment',
-                                                        author_id=post['autor_info']['id'],post_id=post['id']).pack())
-                        ,)
+                                                        author_id=post['autor_info']['id'],post_id=post['id']).pack()),
+                        types.InlineKeyboardButton(text='Удалить пост', callback_data=PostCallBack(foo='delete',author_id=post['autor_info']['id'],post_id=post['id']).pack()),
+                        )
             text = (f'{post['title']}\n{post['content']}\nАвтор:{post['autor_info']['username']}\n'
                               f'❤️{post['like_count']}\nДата создания:{post['created_at'][:10]}')
 
@@ -77,11 +78,11 @@ async def al_posts_tg(message:types.Message):
 async def profile_author(query: CallbackQuery, callback_data:PostCallBack):
     author_id = callback_data.author_id
     try:
-        token =tokens[query.chat.id]
+
+        token =tokens[query.message.chat.id]
     except:
         token = None
     if not token:
-        await query.answer(query.message.chat.id)
         await query.answer('Сначала авторизуйтесь')
     else:
         data = await BaseResponces.get_profile(author_id,token)
@@ -118,7 +119,6 @@ async def comments(query: CallbackQuery, callback_data:PostCallBack):
                                                 author_id=post['autor_info']['id'],post_id=post['id']).pack()),
 
             )
-
             text = (
                 f'{post['title']}\n{post['content']}\nАвтор:{post['user_info']['username']}\n'
                 f'❤️{post['like_count']}\nДата создания:{post['date_of_create'][:10]}')
@@ -153,7 +153,7 @@ async def comment_content(message:types.Message, state:FSMContext):
 async def posts_by_user(query: CallbackQuery, callback_data:PostCallBack):
     author = callback_data.author_id
     try:
-        token =tokens[query.chat.id]
+        token =tokens[query.message.chat.id]
     except:
         token = None
     if not token:
@@ -168,6 +168,7 @@ async def posts_by_user(query: CallbackQuery, callback_data:PostCallBack):
 @Post_router.message(F.text.lower() == 'написать пост')
 async def create_post(message:types.Message, state:FSMContext):
     try:
+
         token =tokens[message.chat.id]
     except:
         token = None
@@ -185,15 +186,28 @@ async def post_title(message:Message, state:FSMContext):
     await message.answer('Отлично!Введите содержание поста')
 
 @Post_router.message(Post_state.content)
-async def post_content(message:types.Message, state:FSMContext):
-    await state.update_data(content = message.text)
+async def post_content(message: types.Message, state: FSMContext):
+    await state.update_data(content=message.text)
     data = await state.get_data()
+    data['categories'] = []
     token = tokens[message.chat.id]
-    req = await BaseResponces.create_post(data=data,token = token)
-    print(req)
+    req = await BaseResponces.create_post(data=data, token=token)
     await message.answer('Отлично ваш пост создан')
     await state.clear()
 
-
-
-
+@Post_router.callback_query(PostCallBack.filter(F.foo == 'delete'))
+async def delete_post(query: CallbackQuery, callback_data:PostCallBack):
+    post_id = callback_data.post_id
+    try:
+        token =tokens[int(query.message.chat.id)]
+    except:
+        token = None
+    if not token:
+        await query.answer('Сначала авторизуйтесь')
+    else:
+        print(token)
+        req = await BaseResponces.delete_post(post_id, token)
+        if req == 'Error':
+            await query.answer('Вы не можете удалить чужой пост')
+        else:
+            await query.answer('Пост удален')
