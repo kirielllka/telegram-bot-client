@@ -1,4 +1,4 @@
-from aiogram.fsm.state import State,StatesGroup
+from aiogram.fsm.state import State, StatesGroup
 
 
 class Reg_state(StatesGroup):
@@ -6,13 +6,16 @@ class Reg_state(StatesGroup):
     username = State()
     password = State()
 
+
 class Login_state(StatesGroup):
     username = State()
     password = State()
 
+
 class Post_state(StatesGroup):
     title = State()
     content = State()
+
 
 class Comment_state(StatesGroup):
     post = State()
