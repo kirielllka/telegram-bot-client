@@ -5,7 +5,7 @@ from aiogram.filters.command import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from ..login_dicts import tokens
+from ..dicts import tokens
 from ..Request_result.requests_file import BaseResponces
 from ..States.StatesModel import Reg_state
 
@@ -44,7 +44,7 @@ async def registr_email(message: Message, state: FSMContext):
 @reg_router.message(Reg_state.username)
 async def register_name(message: Message, state: FSMContext):
     await state.update_data(username=message.text)
-    await message.answer("Отлично!Теперь введите пароль")
+    await message.answer("Отлично!Теперь введите пароль\nОн должен содержать цифры и буквы а также быть отличным от вашего имени")
     await state.set_state(Reg_state.password)
 
 

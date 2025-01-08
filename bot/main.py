@@ -1,15 +1,16 @@
 import asyncio
 import logging
-from OtherCode import Token_fill
+
+from bot.Handlers.OtherHandlers import OtHandleRouter
 from bot.Handlers.registration_handle import reg_router
 from bot.Handlers.Posts_handlers import Post_router
 from bot.Handlers.Login_handle import Login_router
 from bot.Handlers.admin_handles import admin_router
 
 
+
 from aiogram import Bot, Dispatcher
 import os
-from login_dicts import tokens
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -25,8 +26,7 @@ dp = Dispatcher()
 async def main():
     try:
 
-        print(tokens)
-        dp.include_routers(Post_router,reg_router,Login_router,admin_router)
+        dp.include_routers(Post_router,reg_router,Login_router,admin_router,OtHandleRouter)
         await dp.start_polling(bot)
     finally:
         await bot.session.close()

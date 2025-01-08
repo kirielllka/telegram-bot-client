@@ -1,5 +1,6 @@
+from time import sleep
 
-from aiogram import F, Router, types
+from aiogram import F, Router, types, Bot
 from aiogram.filters.command import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
@@ -9,12 +10,14 @@ from bot.CallBackModels import PostCallBack
 from bot.Request_result.requests_file import BaseResponces
 from bot.text_file import *
 
-from ..login_dicts import tokens
+from ..dicts import tokens
 from ..States.StatesModel import Comment_state, Post_state
 
 Post_router = Router()
 
-
+delete_list_post = []
+delete_list_profile = []
+delete_comment_list = []
 @Post_router.message(Command("start"))
 async def starter(message: types.Message):
     await message.answer(hello_text)
@@ -33,8 +36,10 @@ async def menu(message: types.Message):
 
 
 @Post_router.message(F.text.lower() == "посты")
-async def al_posts_tg(message: types.Message):
+async def al_posts_tg(message: types.Message, bot:Bot):
     builder = InlineKeyboardBuilder()
+    delete_list_post.append(message.message_id)
+    await bot.delete_messages(chat_id=message.chat.id, message_ids=delete_list_post)
     try:
         token = tokens[message.chat.id]
     except:
@@ -43,7 +48,7 @@ async def al_posts_tg(message: types.Message):
         await message.answer("Сначала авторизуйтесь")
     else:
         posts = await BaseResponces.get_all_posts(token)
-        dict_post = {}
+        print(posts)
         for post in posts:
             builder.row(
                 types.InlineKeyboardButton(
@@ -70,13 +75,16 @@ async def al_posts_tg(message: types.Message):
                 f"❤️{post['like_count']}\nДата создания:{post['created_at'][:10]}"
             )
 
-            await message.answer(text=text, reply_markup=builder.as_markup())
+            msg = await message.answer(text=text, reply_markup=builder.as_markup())
+            delete_list_post.append(msg.message_id)
             builder = InlineKeyboardBuilder()
 
 
 @Post_router.callback_query(PostCallBack.filter(F.foo == "all_author"))
-async def profile_author(query: CallbackQuery, callback_data: PostCallBack):
+async def profile_author(query: CallbackQuery, callback_data: PostCallBack, bot:Bot):
     author_id = callback_data.author_id
+    delete_list_profile.append(query.message.message_id)
+    await bot.delete_messages(chat_id=query.message.chat.id, message_ids=delete_list_profile)
     try:
 
         token = tokens[query.message.chat.id]
@@ -86,6 +94,8 @@ async def profile_author(query: CallbackQuery, callback_data: PostCallBack):
         await query.answer("Сначала авторизуйтесь")
     else:
         data = await BaseResponces.get_profile(author_id, token)
+        print(data)
+        print('sdsdsd')
         builder = InlineKeyboardBuilder()
         builder.row(
             types.InlineKeyboardButton(
@@ -93,13 +103,15 @@ async def profile_author(query: CallbackQuery, callback_data: PostCallBack):
                 callback_data=PostCallBack(foo="post_by_user", author_id=author_id, post_id=1).pack(),
             )
         )
-        text = f"{data['full_name']}\n{data['age']}\n{data['user_birth_date']}"
-        await query.message.answer(text=text, reply_markup=builder.as_markup(resize_keyboard=True))
-
+        text = f"{data['full_name']}\n{data['user_age']}\n{data['user_birth_date']}"
+        msg = await query.message.answer(text=text, reply_markup=builder.as_markup(resize_keyboard=True))
+        delete_list_profile.append(msg.message_id)
 
 @Post_router.callback_query(PostCallBack.filter(F.foo == "all_comment"))
-async def comments(query: CallbackQuery, callback_data: PostCallBack):
+async def comments(query: CallbackQuery, callback_data: PostCallBack, bot:Bot):
     post_id = callback_data.post_id
+    if len(delete_comment_list) > 0:
+        await bot.delete_messages(chat_id=query.message.chat.id, message_ids=delete_comment_list)
     try:
         token = tokens[query.message.chat.id]
     except KeyError:
@@ -112,22 +124,24 @@ async def comments(query: CallbackQuery, callback_data: PostCallBack):
         builder = InlineKeyboardBuilder()
         if len(data["results"]) == 0:
             await query.message.answer(text="Под данным постом нету комментариев")
+        print(data)
         for post in data["results"]:
             builder.row(
                 types.InlineKeyboardButton(
                     text="Профиль автора",
-                    callback_data=PostCallBack(foo="all_author", author_id=post["autor_info"]["id"], post_id=post["id"]).pack(),
+                    callback_data=PostCallBack(foo="all_author", author_id=post["user_info"]["id"], post_id=post["id"]).pack(),
                 ),
             )
             text = (
-                f"{post['title']}\n{post['content']}\nАвтор:{post['user_info']['username']}\n"
+                f"{post['content']}\nАвтор:{post['user_info']['username']}\n"
                 f"❤️{post['like_count']}\nДата создания:{post['date_of_create'][:10]}"
             )
-            await query.message.answer(text=text, reply_markup=builder.as_markup(resize_keyboard=True))
+            msg = await query.message.answer(text=text, reply_markup=builder.as_markup(resize_keyboard=True))
+            delete_comment_list.append(msg.message_id)
 
 
 @Post_router.callback_query(PostCallBack.filter(F.foo == "for_comment"))
-async def comment_create(query: CallbackQuery, callback_data: PostCallBack, state: FSMContext):
+async def comment_create(query: CallbackQuery, callback_data: PostCallBack, state: FSMContext, bot:Bot):
     try:
         token = tokens[query.message.chat.id]
     except:
@@ -142,19 +156,24 @@ async def comment_create(query: CallbackQuery, callback_data: PostCallBack, stat
 
 
 @Post_router.message(Comment_state.content)
-async def comment_content(message: types.Message, state: FSMContext):
+async def comment_content(message: types.Message, state: FSMContext, bot:Bot):
     await state.update_data(content=message.text)
     data = await state.get_data()
     token = tokens[message.chat.id]
     req = await BaseResponces.create_comment(data=data, token=token, post_id=data["post"])
     print(req)
-    await message.answer("Ваш комментарий опубликован")
+    msg = await message.answer("Ваш комментарий опубликован")
+    sleep(10)
+    await bot.delete_messages(chat_id=message.chat.id,message_ids=[msg.message_id,msg.message_id-1,msg.message_id-2,msg.message_id-3])
     await state.clear()
 
 
 @Post_router.callback_query(PostCallBack.filter(F.foo == "post_by_user"))
-async def posts_by_user(query: CallbackQuery, callback_data: PostCallBack):
+async def posts_by_user(query: CallbackQuery, callback_data: PostCallBack, bot:Bot):
     author = callback_data.author_id
+    builder = InlineKeyboardBuilder()
+    if len(delete_list_post) > 0:
+        await bot.delete_messages(chat_id=query.message.chat.id, message_ids=delete_list_post)
     try:
         token = tokens[query.message.chat.id]
     except:
@@ -164,9 +183,38 @@ async def posts_by_user(query: CallbackQuery, callback_data: PostCallBack):
     else:
         data = await BaseResponces.get_posts_by_user(author, token)
         for post in data:
-            await query.message.answer(
-                f"{post['title']}\n{post['content']}\nАвтор:{post['autor_info']['username']}\n❤️{post['like_count']}\nДата создания:{post['created_at'][:10]}"
+            builder.row(
+                types.InlineKeyboardButton(
+                    text="Профиль автора",
+                    callback_data=PostCallBack(foo="all_author", author_id=post["autor_info"]["id"],
+                                               post_id=post["id"]).pack(),
+                ),
+                types.InlineKeyboardButton(
+                    text="Комментарии",
+                    callback_data=PostCallBack(foo="all_comment", author_id=post["autor_info"]["id"],
+                                               post_id=post["id"]).pack(),
+                ),
             )
+            builder.row(
+                types.InlineKeyboardButton(
+                    text="Написать комментарий",
+                    callback_data=PostCallBack(foo="for_comment", author_id=post["autor_info"]["id"],
+                                               post_id=post["id"]).pack(),
+                ),
+                types.InlineKeyboardButton(
+                    text="Удалить пост",
+                    callback_data=PostCallBack(foo="delete", author_id=post["autor_info"]["id"],
+                                               post_id=post["id"]).pack(),
+                ),
+            )
+            text = (
+                f"{post['title']}\n{post['content']}\nАвтор:{post['autor_info']['username']}\n"
+                f"❤️{post['like_count']}\nДата создания:{post['created_at'][:10]}"
+            )
+
+            msg = await query.message.answer(text=text, reply_markup=builder.as_markup())
+            delete_list_post.append(msg.message_id)
+            builder = InlineKeyboardBuilder()
 
 
 @Post_router.message(F.text.lower() == "написать пост")

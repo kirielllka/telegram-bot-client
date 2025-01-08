@@ -13,6 +13,7 @@ class BaseResponces:
             headers = {"Content-type": "application/json", "Authorization": f"Token {token}"}
             return requests.get(f"{start_url}v1/posts/", headers=headers).json()
         except Exception:
+
             return {"Responce": "error"}
 
     @staticmethod
@@ -59,6 +60,7 @@ class BaseResponces:
     async def register(data):
         try:
             request = requests.post(f"{start_url}auth/users/", data=data).json()
+            print(request)
         except Exception:
             return "Error"
 
@@ -88,7 +90,7 @@ class BaseResponces:
         try:
             request = requests.post(
                 f"{start_url}v1/posts/{post_id}/comments/",
-                data=data,
+                json=data,
                 headers={"Content-type": "application/json", "Authorization": f"Token {token}"},
             ).json()
             return request

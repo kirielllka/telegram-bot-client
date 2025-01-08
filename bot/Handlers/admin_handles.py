@@ -1,7 +1,7 @@
 from aiogram import Router, types
 from aiogram.filters.command import Command
 
-from ..login_dicts import tokens
+from ..dicts import tokens
 
 admin_router = Router()
 
