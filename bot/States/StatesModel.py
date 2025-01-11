@@ -20,3 +20,7 @@ class Post_state(StatesGroup):
 class Comment_state(StatesGroup):
     post = State()
     content = State()
+
+class Profile_state(StatesGroup):
+    img = State()
+    date_of_birth = State()

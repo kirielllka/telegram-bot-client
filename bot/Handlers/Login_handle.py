@@ -47,10 +47,11 @@ async def login_password(message:Message, state:FSMContext, bot:Bot):
         await state.clear()
     else:
         await Token_add(token=token, user_id=message.chat.id)
+        tokens[message.chat.id] = token
         msg = await message.answer(f'Как я мог тебя не узнать! Авторизация прошла успешно')
         await state.clear()
     delete_list.append(message.message_id)
     delete_list.append(msg.message_id)
-    sleep(200)
+    sleep(10)
     await bot.delete_messages(chat_id=message.chat.id,message_ids=delete_list, request_timeout=20)
 

@@ -19,8 +19,9 @@ async def logout_handle(message:Message, bot: Bot):
     if not token:
         msg = await message.answer("Сначала авторизуйтесь")
     else:
+        await logout(message.chat.id)
         msg = await message.answer('Сейчас я вас забуду, вы вышли из аккаунта')
     delete_list.append(message.message_id)
     delete_list.append(msg.message_id)
-    sleep(200)
+    sleep(5)
     await bot.delete_messages(chat_id=message.chat.id, message_ids=delete_list )

@@ -3,7 +3,7 @@ import logging
 
 from bot.Handlers.OtherHandlers import OtHandleRouter
 from bot.Handlers.registration_handle import reg_router
-from bot.Handlers.Posts_handlers import Post_router
+from bot.Handlers.MAinHandles import Main_router
 from bot.Handlers.Login_handle import Login_router
 from bot.Handlers.admin_handles import admin_router
 
@@ -26,7 +26,7 @@ dp = Dispatcher()
 async def main():
     try:
 
-        dp.include_routers(Post_router,reg_router,Login_router,admin_router,OtHandleRouter)
+        dp.include_routers(Main_router,reg_router,Login_router,admin_router,OtHandleRouter)
         await dp.start_polling(bot)
     finally:
         await bot.session.close()
