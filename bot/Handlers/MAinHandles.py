@@ -429,7 +429,7 @@ async def red_post_content(message: types.Message, state: FSMContext, bot:Bot):
                 datas[key] = data[key]
         token = tokens[message.chat.id]
         req = await BaseResponces.red_post(token=token,user_id=data['post_id'], data=datas)
-        await message.answer("Отлично ваш пост создан")
+        await message.answer("Отлично ваш пост отредактирован")
         await bot.delete_messages(chat_id=message.chat.id, message_ids=[message.chat.id,message.chat.id+1,message.chat.id-1,
                                                                         message.chat.id-2,message.chat.id-3,message.chat.id-4])
         await state.clear()
