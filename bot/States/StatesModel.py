@@ -24,3 +24,7 @@ class Comment_state(StatesGroup):
 class Profile_state(StatesGroup):
     img = State()
     date_of_birth = State()
+
+class Post_red_state(StatesGroup):
+    title = State()
+    content = State()

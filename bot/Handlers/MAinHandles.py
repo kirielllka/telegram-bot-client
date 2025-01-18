@@ -1,5 +1,5 @@
+import os
 from datetime import datetime
-from pyexpat.errors import messages
 from time import sleep
 
 from PIL import Image
@@ -7,16 +7,15 @@ from PIL import Image
 from aiogram import F, Router, types, Bot
 from aiogram.filters.command import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message, KeyboardButton,InputFile
+from aiogram.types import CallbackQuery, Message, KeyboardButton,FSInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
-from poetry.core.masonry.builders.builder import Builder
 
 from bot.CallBackModels import PostCallBack
 from bot.Request_result.requests_file import BaseResponces
 from bot.text_file import *
 
 from ..dicts import tokens
-from ..States.StatesModel import Comment_state, Post_state, Profile_state
+from ..States.StatesModel import Comment_state, Post_state, Profile_state, Post_red_state
 
 Main_router = Router()
 
@@ -53,7 +52,6 @@ async def al_posts_tg(message: types.Message, bot:Bot):
         await message.answer("Сначала авторизуйтесь")
     else:
         posts = await BaseResponces.get_all_posts(token)
-        print(posts)
         if len(posts) ==0:
             msg = await message.answer('Постов нет')
             sleep(30)
@@ -79,6 +77,14 @@ async def al_posts_tg(message: types.Message, bot:Bot):
                     callback_data=PostCallBack(foo="delete", author_id=post["autor_info"]["id"], post_id=post["id"]).pack(),
                 ),
             )
+            builder.row(
+                    types.InlineKeyboardButton(
+                        text='Редактировать пост',
+                        callback_data=PostCallBack(foo="re_post", author_id=post["autor_info"]["id"],
+                                                   post_id=post["id"]).pack(),
+                    ),
+                )
+
             text = (
                 f"{post['title']}\n{post['content']}\nАвтор:{post['autor_info']['username']}\n"
                 f"❤️{post['like_count']}\nДата создания:{post['created_at'][:10]}"
@@ -103,11 +109,7 @@ async def profile_author(query: CallbackQuery, callback_data: PostCallBack, bot:
         await query.answer("Сначала авторизуйтесь")
     else:
         data = await BaseResponces.get_profile(author_id, token)
-        # image = InputFile(
-        #     f'/home/yanix/Desktop/Image_bot/{query.message.chat.id}.png',
-        # )
-        # await bot.send_photo(photo=image, chat_id=query.message.chat.id)
-        # print(image)
+
         builder = InlineKeyboardBuilder()
         builder.row(
             types.InlineKeyboardButton(
@@ -116,7 +118,7 @@ async def profile_author(query: CallbackQuery, callback_data: PostCallBack, bot:
             )
         )
         text = f"{data['full_name']}\n{data['user_age']}\n{data['user_birth_date']}"
-        msg = await bot.send_photo(photo=image,caption=text, reply_markup=builder.as_markup(resize_keyboard=True))
+        msg = await bot.send_photo(photo=photo,caption=text, reply_markup=builder.as_markup(resize_keyboard=True))
         delete_list_profile.append(msg.message_id)
 
 @Main_router.callback_query(PostCallBack.filter(F.foo == "all_comment"))
@@ -136,7 +138,6 @@ async def comments(query: CallbackQuery, callback_data: PostCallBack, bot:Bot):
         builder = InlineKeyboardBuilder()
         if len(data["results"]) == 0:
             await query.message.answer(text="Под данным постом нету комментариев")
-        print(data)
         for post in data["results"]:
             builder.row(
                 types.InlineKeyboardButton(
@@ -173,7 +174,6 @@ async def comment_content(message: types.Message, state: FSMContext, bot:Bot):
     data = await state.get_data()
     token = tokens[message.chat.id]
     req = await BaseResponces.create_comment(data=data, token=token, post_id=data["post"])
-    print(req)
     msg = await message.answer("Ваш комментарий опубликован")
     sleep(10)
     await bot.delete_messages(chat_id=message.chat.id,message_ids=[msg.message_id,msg.message_id-1,msg.message_id-2,msg.message_id-3])
@@ -219,10 +219,17 @@ async def posts_by_user(query: CallbackQuery, callback_data: PostCallBack, bot:B
                                                post_id=post["id"]).pack(),
                 ),
             )
-            text = (
-                f"{post['title']}\n{post['content']}\nАвтор:{post['autor_info']['username']}\n"
-                f"❤️{post['like_count']}\nДата создания:{post['created_at'][:10]}"
+            builder.row(
+            types.InlineKeyboardButton(
+                text='Редактировать пост',
+                callback_data=PostCallBack(foo="re_post", author_id=post["autor_info"]["id"],
+                                               post_id=post["id"]).pack(),
+                ),
             )
+
+            text = (
+                    f"{post['title']}\n{post['content']}\nАвтор:{post['autor_info']['username']}\n"
+                    f"❤️{post['like_count']}\nДата создания:{post['created_at'][:10]}")
 
             msg = await query.message.answer(text=text, reply_markup=builder.as_markup())
             delete_list_post.append(msg.message_id)
@@ -251,13 +258,15 @@ async def post_title(message: Message, state: FSMContext):
 
 
 @Main_router.message(Post_state.content)
-async def post_content(message: types.Message, state: FSMContext):
+async def post_content(message: types.Message, state: FSMContext, bot:Bot):
     await state.update_data(content=message.text)
     data = await state.get_data()
     data["categories"] = []
     token = tokens[message.chat.id]
     req = await BaseResponces.create_post(data=data, token=token)
     await message.answer("Отлично ваш пост создан")
+    await bot.delete_messages(chat_id=message.chat.id, message_ids=[message.chat.id,message.chat.id+1,message.chat.id-1,
+                                                                    message.chat.id-2,message.chat.id-3,message.chat.id-4])
     await state.clear()
 
 
@@ -271,7 +280,6 @@ async def delete_post(query: CallbackQuery, callback_data: PostCallBack):
     if not token:
         await query.answer("Сначала авторизуйтесь")
     else:
-        print(token)
         req = await BaseResponces.delete_post(post_id, token)
         if req == "Error":
             await query.answer("Вы не можете удалить чужой пост")
@@ -291,6 +299,7 @@ async def profile(message:Message,bot:Bot):
             await bot.delete_messages(chat_id=message.chat.id, message_ids=delete_list_profile)
         user = await BaseResponces.user_me(token)
         user_id = user['id']
+        photo = FSInputFile(f'/home/yanix/Desktop/Image_bot/{message.chat.id}.png')
         builder = InlineKeyboardBuilder()
         builder.row(
     types.InlineKeyboardButton(
@@ -304,7 +313,7 @@ async def profile(message:Message,bot:Bot):
         )
         data = await BaseResponces.get_profile(user_id, token)
         text = f"{data['full_name']}\n{data['user_age']}\n{data['user_birth_date']}"
-        msg = await message.answer(text=text, reply_markup=builder.as_markup(resize_keyboard=True))
+        msg = await bot.send_photo(chat_id=message.chat.id,photo=photo,caption=text, reply_markup=builder.as_markup(resize_keyboard=True))
         delete_list_profile.append(msg.message_id)
 
 @Main_router.callback_query(PostCallBack.filter(F.foo == "re_profile"))
@@ -312,7 +321,6 @@ async def red_profile(query: CallbackQuery, callback_data: PostCallBack, state: 
     builder = ReplyKeyboardBuilder()
     await state.update_data(id = callback_data.author_id)
     await state.set_state(Profile_state.img)
-    await query.answer()
     builder.row(
         KeyboardButton(text='Оставить текущее')
     )
@@ -324,6 +332,7 @@ async def profile_photo(message, state:FSMContext, bot:Bot):
         await message.answer(text='Хорошо, отправьте дату рождения в формате год-месяц-число')
         await state.set_state(Profile_state.date_of_birth)
     else:
+        os.remove(f'/home/yanix/Desktop/Image_bot/{message.chat.id}.png')
         file_id = message.photo[-1].file_id
         file_info = await bot.get_file(file_id)
         file_path = file_info.file_path
@@ -368,7 +377,6 @@ async def profile_date_of_birth(message, state:FSMContext, bot:Bot):
                 datas = {
                     'user_birth_date':data['date']
                 }
-            print(datas)
             req = await BaseResponces.red_profile(token=token,user_id =data['id'],data=datas  )
             if req == 'Error':
                 await message.answer('Что то пошло не так проверьте данные и начните заново')
@@ -380,3 +388,48 @@ async def profile_date_of_birth(message, state:FSMContext, bot:Bot):
     except ValueError:
         await message.answer('Неверный формат, введите дату заново')
         await state.set_state(Profile_state.date_of_birth)
+
+@Main_router.callback_query(PostCallBack.filter(F.foo == "re_post"))
+async def red_post(query: CallbackQuery, callback_data: PostCallBack, state: FSMContext):
+    builder = ReplyKeyboardBuilder()
+    await state.update_data(post_id=callback_data.post_id)
+    await state.set_state(Post_red_state.title)
+    builder.row(
+        KeyboardButton(text='Оставить текущее')
+    )
+    await query.message.answer('Напишите название поста', reply_markup=builder.as_markup(resize_keyvoard=True))
+
+@Main_router.message(Post_red_state.title)
+async def red_post_title(message: Message, state: FSMContext):
+    builder = ReplyKeyboardBuilder()
+    builder.row(
+        KeyboardButton(text='Оставить текущее')
+    )
+    if message.text == 'Оставить текущее':
+        await message.answer("Хорошо!Введите содержание поста", reply_markup=builder.as_markup(resize_keyvoard=True))
+        await state.set_state(Post_state.content)
+
+    else:
+        await state.update_data(title=message.text)
+        await state.set_state(Post_red_state.content)
+
+        await message.answer("Отлично!Введите содержание поста", reply_markup=builder.as_markup(resize_keyvoard=True))
+
+
+@Main_router.message(Post_red_state.content)
+async def red_post_content(message: types.Message, state: FSMContext, bot:Bot):
+        token = tokens[message.chat.id]
+        if message.text != 'Оставить текущее':
+            await state.update_data(content=message.text)
+        data = await state.get_data()
+        data["categories"] = []
+        datas = {}
+        for key in data.keys():
+            if key != 'post_id':
+                datas[key] = data[key]
+        token = tokens[message.chat.id]
+        req = await BaseResponces.red_post(token=token,user_id=data['post_id'], data=datas)
+        await message.answer("Отлично ваш пост создан")
+        await bot.delete_messages(chat_id=message.chat.id, message_ids=[message.chat.id,message.chat.id+1,message.chat.id-1,
+                                                                        message.chat.id-2,message.chat.id-3,message.chat.id-4])
+        await state.clear()

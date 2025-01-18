@@ -131,3 +131,13 @@ class BaseResponces:
             return req
         except Exception:
             return 'Error'
+
+    @staticmethod
+    async def red_post(token, user_id, data):
+        try:
+            headers = {"Content-type": "application/json", "Authorization": f"Token {token}"}
+            req = requests.put(f"{start_url}v1/posts/{user_id}/", headers=headers, json=data).json()
+            return req
+        except Exception:
+            return 'Error'
+
