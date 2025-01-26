@@ -1,7 +1,6 @@
 
 
 import requests
-from urllib3 import request
 
 start_url = "http://127.0.0.1:8000/api/"
 

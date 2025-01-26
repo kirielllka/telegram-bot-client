@@ -1,4 +1,3 @@
-import asyncio
 
 from requests_file import BaseResponces
 
@@ -71,4 +70,3 @@ async def main():
     print(post_data)
 
 
-asyncio.run(main())

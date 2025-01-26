@@ -109,7 +109,7 @@ async def profile_author(query: CallbackQuery, callback_data: PostCallBack, bot:
         await query.answer("Сначала авторизуйтесь")
     else:
         data = await BaseResponces.get_profile(author_id, token)
-
+        photo = FSInputFile(f'/home/yanix/Desktop/Image_bot/{query.message.chat.id}.png')
         builder = InlineKeyboardBuilder()
         builder.row(
             types.InlineKeyboardButton(
@@ -118,7 +118,7 @@ async def profile_author(query: CallbackQuery, callback_data: PostCallBack, bot:
             )
         )
         text = f"{data['full_name']}\n{data['user_age']}\n{data['user_birth_date']}"
-        msg = await bot.send_photo(photo=photo,caption=text, reply_markup=builder.as_markup(resize_keyboard=True))
+        msg = await bot.send_photo(chat_id=query.message.chat.id,photo=photo,caption=text, reply_markup=builder.as_markup(resize_keyboard=True))
         delete_list_profile.append(msg.message_id)
 
 @Main_router.callback_query(PostCallBack.filter(F.foo == "all_comment"))
