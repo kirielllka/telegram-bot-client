@@ -24,9 +24,18 @@ async def Token_search(user_id,token):
 
 
 async def logout(user_id):
-    with open('/home/yanix/Desktop/Tokens_tg.txt') as file:
-        for line in file.readlines():
-            print(line.split(' ')[0])
-            if line.split(' ')[0] == user_id:
-                print('dddd')
-                line.split(' ')[0], line.split(' ')[1] = '' , ''
+    file_path = '/home/yanix/Desktop/Tokens_tg.txt'
+    try:
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
+
+        with open(file_path, 'w') as file:
+            for line in lines:
+                if int(line.split(' ')[0]) != user_id:
+                    file.write(line)
+        print(f"Удаление токена пользователя с id: {user_id} завершено")
+
+    except FileNotFoundError:
+        print(f"Файл '{file_path}' не найден.")
+    except Exception as e:
+        print(f"Произошла ошибка: {e}")
