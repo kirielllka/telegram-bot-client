@@ -109,7 +109,7 @@ async def profile_author(query: CallbackQuery, callback_data: PostCallBack, bot:
         await query.answer("Сначала авторизуйтесь")
     else:
         data = await BaseResponces.get_profile(author_id, token)
-        photo = FSInputFile(f'/home/yanix/Desktop/Image_bot/{query.message.chat.id}.png')
+        photo = FSInputFile(f'/home/yanix/Desktop/Image_bot/{tokens[query.message.chat.id]}.png')
         builder = InlineKeyboardBuilder()
         builder.row(
             types.InlineKeyboardButton(
@@ -299,7 +299,7 @@ async def profile(message:Message,bot:Bot):
             await bot.delete_messages(chat_id=message.chat.id, message_ids=delete_list_profile)
         user = await BaseResponces.user_me(token)
         user_id = user['id']
-        photo = FSInputFile(f'/home/yanix/Desktop/Image_bot/{message.chat.id}.png')
+        photo = FSInputFile(f'/home/yanix/Desktop/Image_bot/{tokens[message.chat.id]            }.png')
         builder = InlineKeyboardBuilder()
         builder.row(
     types.InlineKeyboardButton(
@@ -332,7 +332,10 @@ async def profile_photo(message, state:FSMContext, bot:Bot):
         await message.answer(text='Хорошо, отправьте дату рождения в формате год-месяц-число')
         await state.set_state(Profile_state.date_of_birth)
     else:
-        os.remove(f'/home/yanix/Desktop/Image_bot/{message.chat.id}.png')
+        try:
+            os.remove(f'/home/yanix/Desktop/Image_bot/{tokens[message.chat.id]}.png')
+        except Exception:
+            pass
         file_id = message.photo[-1].file_id
         file_info = await bot.get_file(file_id)
         file_path = file_info.file_path
@@ -340,7 +343,7 @@ async def profile_photo(message, state:FSMContext, bot:Bot):
         destination_path = f'/home/yanix/Desktop/Image_bot/{message.chat.id}.png'  # Save to disk
         await bot.download_file(file_path, destination_path)
         img = Image.open(destination_path)
-        path = f'/home/yanix/Desktop/Image_bot/{message.chat.id}.png'
+        path = f'/home/yanix/Desktop/Image_bot/{tokens[message.chat.id]}.png'
         img.save(path)
         await state.update_data(img = path)
         await state.set_state(Profile_state.date_of_birth)

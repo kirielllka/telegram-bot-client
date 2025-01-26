@@ -126,7 +126,8 @@ class BaseResponces:
     async def red_profile(token,user_id,data):
         try:
             headers = {"Content-type": "application/json", "Authorization": f"Token {token}"}
-            req = requests.put(f"{start_url}v1/profiles/{user_id}/", headers=headers, json=data).json()
+            req = requests.put(f"http://127.0.0.1:8000/api/v1/profiles/{user_id}/", headers=headers, json=data).json()
+            print(req)
             return req
         except Exception:
             return 'Error'

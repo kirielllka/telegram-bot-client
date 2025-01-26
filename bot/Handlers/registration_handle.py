@@ -58,4 +58,5 @@ async def register_password(message: Message, state: FSMContext):
         await message.answer(text="Что-то пошло не так, пройдите регистрацию заново")
     else:
         await message.answer(text="Регистрация прошла успешно!")
+        await message.answer(text='Теперь авторизуйтесь')
         await state.clear()
