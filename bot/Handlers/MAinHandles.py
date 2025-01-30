@@ -9,13 +9,14 @@ from aiogram.filters.command import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message, KeyboardButton,FSInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
+from poetry.core.masonry.builders.builder import Builder
 
 from bot.CallBackModels import PostCallBack
 from bot.Request_result.requests_file import BaseResponces
 from bot.text_file import *
 
 from ..dicts import tokens
-from ..States.StatesModel import Comment_state, Post_state, Profile_state, Post_red_state
+from ..States.StatesModel import Comment_state, Post_state, Profile_state, Post_red_state, Post_search
 
 Main_router = Router()
 
@@ -436,3 +437,66 @@ async def red_post_content(message: types.Message, state: FSMContext, bot:Bot):
         await bot.delete_messages(chat_id=message.chat.id, message_ids=[message.chat.id,message.chat.id+1,message.chat.id-1,
                                                                         message.chat.id-2,message.chat.id-3,message.chat.id-4])
         await state.clear()
+
+@Main_router.message(F.text.lower() =='поиск поста')
+async def search_post(message:Message, state:FSMContext, bot:Bot):
+    if len(delete_list_post) > 0 :
+        await bot.delete_messages(chat_id=message.chat.id,message_ids=delete_list_post)
+    try:
+        token = tokens[int(message.chat.id)]
+    except:
+        token = None
+    if not token:
+        await message.answer("Сначала авторизуйтесь")
+    else:
+        await state.set_state(Post_search.text)
+        await message.answer('Напишите текст для поиска')
+
+@Main_router.message(Post_search.text)
+async def search_post_text(message:Message, state:FSMContext, bot:Bot):
+    token = tokens[int(message.chat.id)]
+    req = await BaseResponces.search_post(message.text,token=token)
+    builder = InlineKeyboardBuilder()
+    if len(req) == 0:
+        await message.answer('Похожих постов не найдено')
+        await bot.delete_messages(chat_id=message.chat.id, message_ids=[message.message_id,message.message_id+1,message.message_id-1,message.message_id-2])
+    else:
+        await state.clear()
+        await bot.delete_messages(chat_id=message.chat.id, message_ids=[message.message_id,message.message_id-1,message.message_id-2])
+        for post in req:
+            builder.row(
+                types.InlineKeyboardButton(
+                    text="Профиль автора",
+                    callback_data=PostCallBack(foo="all_author", author_id=post["autor_info"]["id"], post_id=post["id"]).pack(),
+                ),
+                types.InlineKeyboardButton(
+                    text="Комментарии",
+                    callback_data=PostCallBack(foo="all_comment", author_id=post["autor_info"]["id"], post_id=post["id"]).pack(),
+                ),
+            )
+            builder.row(
+                types.InlineKeyboardButton(
+                    text="Написать комментарий",
+                    callback_data=PostCallBack(foo="for_comment", author_id=post["autor_info"]["id"], post_id=post["id"]).pack(),
+                ),
+                types.InlineKeyboardButton(
+                    text="Удалить пост",
+                    callback_data=PostCallBack(foo="delete", author_id=post["autor_info"]["id"], post_id=post["id"]).pack(),
+                ),
+            )
+            builder.row(
+                    types.InlineKeyboardButton(
+                        text='Редактировать пост',
+                        callback_data=PostCallBack(foo="re_post", author_id=post["autor_info"]["id"],
+                                                   post_id=post["id"]).pack(),
+                    ),
+                )
+
+            text = (
+                f"{post['title']}\n{post['content']}\nАвтор:{post['autor_info']['username']}\n"
+                f"❤️{post['like_count']}\nДата создания:{post['created_at'][:10]}"
+            )
+
+            msg = await message.answer(text=text, reply_markup=builder.as_markup())
+            delete_list_post.append(msg.message_id)
+            builder = InlineKeyboardBuilder()

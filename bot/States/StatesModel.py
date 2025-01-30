@@ -28,3 +28,6 @@ class Profile_state(StatesGroup):
 class Post_red_state(StatesGroup):
     title = State()
     content = State()
+
+class Post_search(StatesGroup):
+    text = State()

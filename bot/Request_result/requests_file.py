@@ -140,4 +140,11 @@ class BaseResponces:
             return req
         except Exception:
             return 'Error'
-
+    @staticmethod
+    async def search_post(data, token):
+        try:
+            headers = {"Content-type": "application/json", "Authorization": f"Token {token}"}
+            req = requests.get(f"{start_url}v1/posts/?search={data}", headers=headers, json=data).json()
+            return req
+        except Exception:
+            return 'Error'
