@@ -4,9 +4,8 @@ from aiogram import Router, Bot
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from ..OtherCode import logout
-from ..dicts import tokens
-
+from bot.dicts.py import tokens
+from bot.OtherCode.py import logout
 OtHandleRouter = Router()
 delete_list = []
 

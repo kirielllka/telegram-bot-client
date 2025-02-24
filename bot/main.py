@@ -1,12 +1,11 @@
 import asyncio
 import logging
 
-from bot.Handlers.OtherHandlers import OtHandleRouter
-from bot.Handlers.registration_handle import reg_router
-from bot.Handlers.MAinHandles import Main_router
-from bot.Handlers.Login_handle import Login_router
-from bot.Handlers.admin_handles import admin_router
-
+from Handlers.OtherHandlers import OtHandleRouter
+from Handlers.registration_handle import reg_router
+from Handlers.MAinHandles import Main_router
+from Handlers.Login_handle import Login_router
+from Handlers.admin_handles import admin_router
 
 
 from aiogram import Bot, Dispatcher,types

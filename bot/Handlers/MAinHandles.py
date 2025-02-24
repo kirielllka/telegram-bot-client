@@ -9,7 +9,6 @@ from aiogram.filters.command import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message, KeyboardButton,FSInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
-from poetry.core.masonry.builders.builder import Builder
 
 from bot.CallBackModels import PostCallBack
 from bot.Request_result.requests_file import BaseResponces
@@ -325,7 +324,7 @@ async def red_profile(query: CallbackQuery, callback_data: PostCallBack, state: 
     builder.row(
         KeyboardButton(text='Оставить текущее')
     )
-    await query.message.answer(text='Отправьте фото для своего профиля', reply_markup=builder.as_markup(resize_keyvoard=True))
+    await query.message.answer(text='Отправьте фото для своего профиля', reply_markup=builder.as_markup(resize_keyboard=True))
 
 @Main_router.message(Profile_state.img)
 async def profile_photo(message, state:FSMContext, bot:Bot):
